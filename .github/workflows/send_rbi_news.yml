@@ -1,0 +1,30 @@
+name: Daily RBI News Digest
+
+on:
+  schedule:
+    - cron: "0 23 * * *"  # Runs daily at 11:00 PM UTC
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  send-news:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Install Dependencies
+        run: pip install beautifulsoup4 requests
+
+      - name: Send RBI News
+        env:
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
+          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
+        run: |
+          python send_rbi_news.py
