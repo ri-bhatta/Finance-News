@@ -2,7 +2,7 @@ name: Daily RBI News Digest
 
 on:
   schedule:
-    - cron: "0 23 * * *"  # Runs daily at 11:00 PM UTC
+    - cron: "0 21 * * *"  # Runs daily at 11:00 PM UTC
   workflow_dispatch:  # Allows manual triggering
 
 jobs:
