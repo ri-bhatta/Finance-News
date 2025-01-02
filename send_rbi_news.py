@@ -6,9 +6,13 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from email.mime.text import MIMEText
+import logging
 
 # Gmail API scopes
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def authenticate_gmail():
     """Authenticate the Gmail API and return the service."""
@@ -40,25 +44,38 @@ def send_email(service, sender, to, subject, body):
     email = create_email(sender, to, subject, body)
     try:
         message = service.users().messages().send(userId='me', body=email).execute()
-        print(f"Message sent: {message['id']}")
+        logging.info(f"Message sent: {message['id']}")
     except HttpError as error:
-        print(f"An error occurred: {error}")
+        logging.error(f"An error occurred while sending email: {error}")
 
-def search_rbi_news():
-    """Dummy function to get news. Replace with your actual code."""
-    return "Today's RBI news: Placeholder for actual news."
+def fetch_rbi_news():
+    """Fetch RBI news. Replace with your actual implementation."""
+    try:
+        # Example: Replace with real API call or web scraping logic
+        return "Today's RBI news: Placeholder for actual news."
+    except Exception as e:
+        logging.error(f"Failed to fetch RBI news: {e}")
+        return "Failed to retrieve news."
 
 if __name__ == '__main__':
-    # Retrieve sender and recipient email from environment variables
-    sender_email = os.environ['SENDER_EMAIL']
-    recipient_email = os.environ['RECEIVER_EMAIL']
+    try:
+        # Retrieve sender and recipient email from environment variables
+        sender_email = os.environ.get('SENDER_EMAIL')
+        recipient_email = os.environ.get('RECEIVER_EMAIL')
 
-    # Authenticate and get the Gmail API service
-    service = authenticate_gmail()
+        if not sender_email or not recipient_email:
+            logging.error("Environment variables SENDER_EMAIL or RECEIVER_EMAIL are not set.")
+            exit(1)
 
-    # Email details
-    subject = "Daily RBI News"
-    body = search_rbi_news()
+        # Authenticate and get the Gmail API service
+        service = authenticate_gmail()
 
-    # Send the email
-    send_email(service, sender_email, recipient_email, subject, body)
+        # Email details
+        subject = "Daily RBI News"
+        body = fetch_rbi_news()
+
+        # Send the email
+        send_email(service, sender_email, recipient_email, subject, body)
+
+    except Exception as main_error:
+        logging.error(f"An unexpected error occurred: {main_error}")
