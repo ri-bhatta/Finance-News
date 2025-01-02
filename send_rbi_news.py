@@ -8,7 +8,7 @@ from googleapiclient.errors import HttpError
 from email.mime.text import MIMEText
 import logging
 
-# Gmail API scopes
+# Gmail API scopes 
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
 
 # Configure logging
