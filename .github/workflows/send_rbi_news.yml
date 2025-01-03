@@ -42,9 +42,13 @@ jobs:
           body = "Here is today's RBI news (placeholder). Replace this with actual news content."
 
           try:
-              # Connect to the SMTP server
+              # Connect to the Gmail SMTP server
               server = smtplib.SMTP('smtp.gmail.com', 587)
-              server.starttls()  # Start TLS encryption
+              server.ehlo()  # Identify to the SMTP server
+              server.starttls()  # Upgrade connection to secure TLS
+              server.ehlo()  # Re-identify after starting TLS
+
+              # Login to the SMTP server
               server.login(sender_email, sender_password)
 
               # Create the email
@@ -57,8 +61,10 @@ jobs:
               # Send the email
               server.sendmail(sender_email, receiver_email, message.as_string())
               print("Email sent successfully!")
+
           except Exception as e:
               print(f"Failed to send email: {e}")
+
           finally:
               server.quit()
           EOF
