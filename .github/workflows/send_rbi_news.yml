@@ -2,7 +2,7 @@ name: Send RBI News Email
 
 on:
   schedule:
-    - cron: '30 17 * * *'  # Runs every day at 17:30 UTC (11:00 PM IST)
+    - cron: '30 17 * * *'
   workflow_dispatch:      # Allows manual trigger from GitHub UI
 
 jobs:
@@ -11,8 +11,75 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: 3.x
-      # Remaining workflow steps...
+
+      - name: Install dependencies
+        run: pip install --upgrade pip requests
+
+      - name: Fetch Google Search Results and Send Email
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          SEARCH_ENGINE_ID: ${{ secrets.SEARCH_ENGINE_ID }}
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
+          RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
+        run: |
+          python - <<EOF
+          import smtplib
+          from email.mime.text import MIMEText
+          from email.mime.multipart import MIMEMultipart
+          import requests
+          import os
+
+          # Environment variables
+          api_key = os.getenv('GOOGLE_API_KEY')
+          search_engine_id = os.getenv('SEARCH_ENGINE_ID')
+          sender_email = os.getenv('SENDER_EMAIL')
+          sender_password = os.getenv('SENDER_PASSWORD')
+          receiver_email = os.getenv('RECEIVER_EMAIL')
+
+          # Fetch Google search results
+          query = "Reserve Bank of India"
+          search_url = f"https://www.googleapis.com/customsearch/v1?q={query}&key={api_key}&cx={search_engine_id}"
+          response = requests.get(search_url)
+          results = response.json()
+
+          # Process search results
+          if "items" in results:
+              search_results = "\n".join(
+                  [f"- {item['title']}: {item['link']}" for item in results['items'][:5]]
+              )
+          else:
+              search_results = "No search results found."
+
+          # Email content
+          subject = "Daily RBI News"
+          body = f"Here are the latest search results for 'Reserve Bank of India':\n\n{search_results}"
+
+          try:
+              # Connect to Gmail SMTP server
+              server = smtplib.SMTP('smtp.gmail.com', 587)
+              server.starttls()
+              server.login(sender_email, sender_password)
+
+              # Create email
+              message = MIMEMultipart()
+              message['From'] = sender_email
+              message['To'] = receiver_email
+              message['Subject'] = subject
+              message.attach(MIMEText(body, 'plain'))
+
+              # Send email
+              server.sendmail(sender_email, receiver_email, message.as_string())
+              print("Email sent successfully!")
+
+          except Exception as e:
+              print(f"Failed to send email: {e}")
+
+          finally:
+              server.quit()
+          EOF
