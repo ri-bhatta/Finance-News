@@ -43,7 +43,7 @@ jobs:
           receiver_email = os.getenv('RECEIVER_EMAIL')
 
           # Fetch Google search results
-          query = "Reserve Bank of India"
+          query = "Reserve Bank of India news"
           search_url = f"https://www.googleapis.com/customsearch/v1?q={query}&key={api_key}&cx={search_engine_id}"
           response = requests.get(search_url)
           results = response.json()
