@@ -18,10 +18,12 @@ jobs:
           python-version: 3.x
 
       - name: Install dependencies
-        run: pip install --upgrade pip
+        run: pip install --upgrade pip requests
 
-      - name: Send email using Python
+      - name: Fetch Google Search Results and Send Email
         env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          SEARCH_ENGINE_ID: ${{ secrets.SEARCH_ENGINE_ID }}
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
           SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
           RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
@@ -30,45 +32,48 @@ jobs:
           import smtplib
           from email.mime.text import MIMEText
           from email.mime.multipart import MIMEMultipart
+          import requests
           import os
 
-          # Fetch environment variables
-          sender_email = os.environ['SENDER_EMAIL']
-          sender_password = os.environ['SENDER_PASSWORD']
-          receiver_email = os.environ['RECEIVER_EMAIL']
+          # Environment variables
+          api_key = os.getenv('GOOGLE_API_KEY')
+          search_engine_id = os.getenv('SEARCH_ENGINE_ID')
+          sender_email = os.getenv('SENDER_EMAIL')
+          sender_password = os.getenv('SENDER_PASSWORD')
+          receiver_email = os.getenv('RECEIVER_EMAIL')
 
-          # Validate email addresses
-          if not sender_email or not sender_password or not receiver_email:
-              raise ValueError("Environment variables SENDER_EMAIL, SENDER_PASSWORD, or RECEIVER_EMAIL are missing.")
+          # Fetch Google search results
+          query = "Reserve Bank of India News today"
+          search_url = f"https://www.googleapis.com/customsearch/v1?q={query}&key={api_key}&cx={search_engine_id}"
+          response = requests.get(search_url)
+          results = response.json()
 
-          if '@' not in sender_email or '@' not in receiver_email:
-              raise ValueError("Invalid email address format.")
+          # Process search results
+          if "items" in results:
+              search_results = "\n".join(
+                  [f"- {item['title']}: {item['link']}" for item in results['items'][:5]]
+              )
+          else:
+              search_results = "No search results found."
 
           # Email content
           subject = "Daily RBI News"
-          body = "Here is today's RBI news (placeholder). Replace this with actual news content."
+          body = f"Here are the latest search results for 'Reserve Bank of India':\n\n{search_results}"
 
           try:
-              # Connect to the Gmail SMTP server
+              # Connect to Gmail SMTP server
               server = smtplib.SMTP('smtp.gmail.com', 587)
-              server.ehlo()  # Identify to the SMTP server
-              server.starttls()  # Upgrade connection to secure TLS
-              server.ehlo()  # Re-identify after starting TLS
-
-              # Login to the SMTP server
+              server.starttls()
               server.login(sender_email, sender_password)
 
-              # Create the email
+              # Create email
               message = MIMEMultipart()
               message['From'] = sender_email
               message['To'] = receiver_email
               message['Subject'] = subject
               message.attach(MIMEText(body, 'plain'))
 
-              # Log email details for debugging
-              print(f"Sending email from {sender_email} to {receiver_email} with subject: {subject}")
-
-              # Send the email
+              # Send email
               server.sendmail(sender_email, receiver_email, message.as_string())
               print("Email sent successfully!")
 
