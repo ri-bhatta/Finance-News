@@ -2,7 +2,7 @@ name: Send RBI News Email
 
 on:
   schedule:
-    - cron: '30 17 * * *'
+    - cron: '30 17 * * *'  # Runs every day at 17:30 UTC (11:00 PM IST)
   workflow_dispatch:      # Allows manual trigger from GitHub UI
 
 jobs:
@@ -42,23 +42,33 @@ jobs:
           sender_password = os.getenv('SENDER_PASSWORD')
           receiver_email = os.getenv('RECEIVER_EMAIL')
 
-          # Fetch Google search results
-          query = "Reserve Bank of India news"
-          search_url = f"https://www.googleapis.com/customsearch/v1?q={query}&key={api_key}&cx={search_engine_id}"
-          response = requests.get(search_url)
-          results = response.json()
+          # Define queries
+          queries = [
+              "Reserve Bank of India site:news.google.com",
+              "RBI news Today",
+              "Economy news in India today"
+          ]
 
-          # Process search results
-          if "items" in results:
-              search_results = "\n".join(
-                  [f"- {item['title']}: {item['link']}" for item in results['items'][:5]]
-              )
-          else:
-              search_results = "No search results found."
+          # Function to fetch search results
+          def fetch_results(query):
+              search_url = f"https://www.googleapis.com/customsearch/v1?q={query}&key={api_key}&cx={search_engine_id}"
+              response = requests.get(search_url)
+              results = response.json()
+              if "items" in results:
+                  return "\n".join(
+                      [f"- {item['title']}: {item['link']}" for item in results['items'][:15]]
+                  )
+              return "No search results found."
+
+          # Fetch results for all queries
+          search_results = ""
+          for i, query in enumerate(queries, 1):
+              search_results += f"\n\nQuery {i}: {query}\n"
+              search_results += fetch_results(query)
 
           # Email content
-          subject = "Daily RBI News"
-          body = f"Here are the latest search results for 'Reserve Bank of India':\n\n{search_results}"
+          subject = "Daily RBI and Economy News"
+          body = f"Here are the latest search results:\n{search_results}"
 
           try:
               # Connect to Gmail SMTP server
