@@ -2,32 +2,63 @@ name: Send RBI News Email
 
 on:
   schedule:
-    - cron: '0 8 * * *' # Runs every day at 8:00 AM UTC
-  workflow_dispatch:  # Allows manual trigger from GitHub UI
+    - cron: '0 8 * * *'  # Runs every day at 8:00 AM UTC
+  workflow_dispatch:      # Allows manual trigger from GitHub UI
 
 jobs:
   send_email:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: 3.x
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
 
-    - name: Install dependencies
-      run: pip install google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
+      - name: Install dependencies
+        run: pip install --upgrade pip
 
-    - name: Create credentials.json
-      run: echo "${{ secrets.GOOGLE_CREDENTIALS }}" > credentials.json
+      - name: Send email using Python
+        env:
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
+          RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
+        run: |
+          python - <<EOF
+          import smtplib
+          from email.mime.text import MIMEText
+          from email.mime.multipart import MIMEMultipart
+          import os
 
-    - name: Set environment variables
-      env:
-        SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
-        RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
-      run: echo "Environment variables set"
+          # Fetch environment variables
+          sender_email = os.environ['SENDER_EMAIL']
+          sender_password = os.environ['SENDER_PASSWORD']
+          receiver_email = os.environ['RECEIVER_EMAIL']
 
-    - name: Run Python script
-      run: python send_rbi_news.py
+          # Email content
+          subject = "Daily RBI News"
+          body = "Here is today's RBI news (placeholder). Replace this with actual news content."
+
+          try:
+              # Connect to the SMTP server
+              server = smtplib.SMTP('smtp.gmail.com', 587)
+              server.starttls()  # Start TLS encryption
+              server.login(sender_email, sender_password)
+
+              # Create the email
+              message = MIMEMultipart()
+              message['From'] = sender_email
+              message['To'] = receiver_email
+              message['Subject'] = subject
+              message.attach(MIMEText(body, 'plain'))
+
+              # Send the email
+              server.sendmail(sender_email, receiver_email, message.as_string())
+              print("Email sent successfully!")
+          except Exception as e:
+              print(f"Failed to send email: {e}")
+          finally:
+              server.quit()
+          EOF
