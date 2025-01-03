@@ -44,8 +44,9 @@ jobs:
 
           # Define queries
           queries = [
-              "Reserve Bank of India site:news.google.com",
-              "RBI news Today",
+              "Reserve Bank of India news today site:news.google.com",
+              "Reserve Bank of India news today",
+              "Reserve Bank of India related news today",
               "Economy news in India today"
           ]
 
@@ -56,7 +57,7 @@ jobs:
               results = response.json()
               if "items" in results:
                   return "\n".join(
-                      [f"- {item['title']}: {item['link']}" for item in results['items'][:15]]
+                      [f"- {item['title']}: {item['link']}" for item in results['items'][:20]]
                   )
               return "No search results found."
 
