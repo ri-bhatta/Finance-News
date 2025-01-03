@@ -37,6 +37,13 @@ jobs:
           sender_password = os.environ['SENDER_PASSWORD']
           receiver_email = os.environ['RECEIVER_EMAIL']
 
+          # Validate email addresses
+          if not sender_email or not sender_password or not receiver_email:
+              raise ValueError("Environment variables SENDER_EMAIL, SENDER_PASSWORD, or RECEIVER_EMAIL are missing.")
+
+          if '@' not in sender_email or '@' not in receiver_email:
+              raise ValueError("Invalid email address format.")
+
           # Email content
           subject = "Daily RBI News"
           body = "Here is today's RBI news (placeholder). Replace this with actual news content."
@@ -57,6 +64,9 @@ jobs:
               message['To'] = receiver_email
               message['Subject'] = subject
               message.attach(MIMEText(body, 'plain'))
+
+              # Log email details for debugging
+              print(f"Sending email from {sender_email} to {receiver_email} with subject: {subject}")
 
               # Send the email
               server.sendmail(sender_email, receiver_email, message.as_string())
