@@ -34,7 +34,7 @@ jobs:
           from email.mime.multipart import MIMEMultipart
           import requests
           import os
-          from datetime import datetime, timedelta
+          from datetime import datetime
 
           # Environment variables
           api_key = os.getenv('GOOGLE_API_KEY')
@@ -43,24 +43,22 @@ jobs:
           sender_password = os.getenv('SENDER_PASSWORD')
           receiver_email = os.getenv('RECEIVER_EMAIL')
 
-          # Define queries
+          # Define queries with specific terms
           queries = [
-              "Reserve Bank of India news site:news.google.com",
-              "Reserve Bank of India updates today",
-              "Economy news in India site:news.google.com"
+              "Reserve Bank of India latest updates",
+              "Reserve Bank of India news today",
+              "Indian economy latest news",
+              "RBI breaking news"
           ]
 
           # Function to fetch search results
           def fetch_results(query):
-              today = datetime.now()
-              yesterday = today - timedelta(days=1)
-              date_restrict = f"cdr:1,cd_min:{yesterday.strftime('%Y-%m-%d')},cd_max:{today.strftime('%Y-%m-%d')}"
-              search_url = f"https://www.googleapis.com/customsearch/v1?q={query}&key={api_key}&cx={search_engine_id}&dateRestrict={date_restrict}"
+              search_url = f"https://www.googleapis.com/customsearch/v1?q={query}&key={api_key}&cx={search_engine_id}&sort=date"
               response = requests.get(search_url)
               results = response.json()
               if "items" in results:
                   return "\n".join(
-                      [f"- {item['title']}: {item['link']}" for item in results['items'][:20]]
+                      [f"- {item['title']}: {item['link']}" for item in results['items'][:10]]
                   )
               return "No search results found."
 
@@ -72,7 +70,7 @@ jobs:
 
           # Email content
           subject = f"Daily RBI News - {datetime.now().strftime('%Y-%m-%d')}"
-          body = f"Here are the latest search results from the past 24 hours:\n{search_results}"
+          body = f"Here are the latest search results prioritized by date:\n{search_results}"
 
           try:
               # Connect to Gmail SMTP server
